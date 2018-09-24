@@ -16,7 +16,6 @@ void KMeanCluster(std::vector<std::vector<uint>> & clusterIdList, const std::vec
 		}
 		return;
 	}
-<<<<<<< HEAD
 
 	std::vector<VEC> centriods;
 	VEC cp = points[0];
@@ -49,32 +48,6 @@ void KMeanCluster(std::vector<std::vector<uint>> & clusterIdList, const std::vec
 
 	float minDist,curDist2;
 	uint clusterId, curI, pId;
-=======
-	std::default_random_engine generator;
-	std::uniform_real_distribution<float> dis(0, 1);
-
-	Box box;
-	for (auto & p : points)
-		box.Extend(p);
-
-
-	auto RadomPoint = [&]() {
-		VEC cp;
-		cp.x() = dis(generator);
-		cp.y() = dis(generator);
-		cp.z() = dis(generator);
-		return Lerp(box.min, box.max, cp);
-	};
-
-	std::vector<VEC> centriods;
-	VEC cp;
-	for (uint i = 0; i < k; ++i) {
-		centriods.push_back(RadomPoint());
-	}
-
-	float minDist,curDist2;
-	uint clusterId, curI, pId, cpId;
->>>>>>> 1ad6131e6877d64f61c717839a46d35027de7a43
 	
 	for (uint iterI = 0; iterI < iterNum; ++iterI) {
 		clusterIdList.clear();
@@ -95,7 +68,6 @@ void KMeanCluster(std::vector<std::vector<uint>> & clusterIdList, const std::vec
 		}
 
 		//caculate centroids
-<<<<<<< HEAD
 		centriods.clear();
 		for (auto & clusterIds : clusterIdList) {
 			if (clusterIds.empty()) {
@@ -106,26 +78,12 @@ void KMeanCluster(std::vector<std::vector<uint>> & clusterIdList, const std::vec
 				for (auto pId : clusterIds) {
 					cp += points[pId];
 				}
-=======
-		cpId = 0;
-		centriods.clear();
-		for (auto & clusterIds : clusterIdList) {
-			for (auto pId : clusterIds) {
-				cp += points[pId];
-			}
-
-			if (clusterIds.empty()) {
-				centriods.push_back(RadomPoint());
-			}
-			else {
->>>>>>> 1ad6131e6877d64f61c717839a46d35027de7a43
 				cp *= 1.0f / (float)clusterIds.size();
 				centriods.push_back(cp);
 			}
 		}
 	}
 
-<<<<<<< HEAD
 	auto cpIter = centriods.begin();
 	for (auto iter = clusterIdList.begin(); iter != clusterIdList.end(); ) {
 		if (iter->empty()) {
@@ -222,14 +180,4 @@ void KMeanCluster(std::vector<std::vector<uint>> & clusterIdList, const std::vec
 //	}
 //}
 
-=======
-	for (auto iter = clusterIdList.begin(); iter != clusterIdList.end(); ) {
-		if (iter->empty())
-			iter = clusterIdList.erase(iter);
-		else
-			++iter;
-	}
-}
-
->>>>>>> 1ad6131e6877d64f61c717839a46d35027de7a43
 END_SSE_MATH_NAME

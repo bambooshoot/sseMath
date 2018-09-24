@@ -4,10 +4,7 @@
 #include <functional>
 #include <vector>
 #include <algorithm>
-<<<<<<< HEAD
 #include <memory>
-=======
->>>>>>> 1ad6131e6877d64f61c717839a46d35027de7a43
 #include <FloatSort.h>
 
 #include <sseBase.h>
@@ -26,47 +23,28 @@ public:
 	KdTreeNode() : dim(0), dataId(0) { memset(childrenId,0,sizeof(u_int)*2); };
 	KdTreeNode(u_int _dim, u_int _id)
 	: dim(_dim), dataId(_id){ memset(childrenId, 0, sizeof(u_int) * 2); };
-<<<<<<< HEAD
 	//bool IsLeaf() { return childrenId[0] == 0 && childrenId[1]; }
 };
 
 using KdTreeNodePointer = std::shared_ptr<KdTreeNode>;
 
-=======
-};
-
->>>>>>> 1ad6131e6877d64f61c717839a46d35027de7a43
 template <class Vec>
 class KdTree
 {
 public:
 	Box box;
-<<<<<<< HEAD
 	std::vector<KdTreeNodePointer> pNodeList;
-=======
-	std::vector<KdTreeNode*> pNodeList;
->>>>>>> 1ad6131e6877d64f61c717839a46d35027de7a43
 
 	~KdTree() { Clear(); };
 	void Clear()
 	{
-<<<<<<< HEAD
-=======
-		for (auto & pNode : pNodeList)
-			delete[] pNode;
-
->>>>>>> 1ad6131e6877d64f61c717839a46d35027de7a43
 		pNodeList.clear();
 
 		box.Reset();
 	}
 	void addANode(const u_int _parentId, const u_int _dim, const u_int _dataId, const u_int _chidSide) 
 	{
-<<<<<<< HEAD
 		KdTreeNodePointer pNode(new KdTreeNode(_dim, _dataId));
-=======
-		KdTreeNode * pNode = new KdTreeNode(_dim, _dataId);
->>>>>>> 1ad6131e6877d64f61c717839a46d35027de7a43
 		if (_parentId != UINT_MAX)
 			pNodeList[_parentId]->childrenId[_chidSide] = pNodeList.size();
 
@@ -160,11 +138,7 @@ public:
 		}
 		//fclose(fileId);
 	}
-<<<<<<< HEAD
 	void Search(std::vector<u_int> & foundIdList, Vec p, const float radius, const std::vector<Vec> & pList)
-=======
-	void Search(std::vector<u_int> & foundIdList, Vec p, const float radius, std::vector<Vec> & pList)
->>>>>>> 1ad6131e6877d64f61c717839a46d35027de7a43
 	{
 		foundIdList.clear();
 		Box boxWithRad=box;
@@ -177,7 +151,6 @@ public:
 		if (!boxWithRad.In(p))
 			return;
 
-<<<<<<< HEAD
 		for (int i = 0; i < 3; ++i) {
 			boxWithRad.min[i] = p.cValue(i) - radius;
 			boxWithRad.max[i] = p.cValue(i) + radius;
@@ -220,41 +193,6 @@ public:
 					nodeIdList.push_back(pCurNode->childrenId[1]);
 					boxList.push_back(rBox);
 				}
-=======
-		std::vector<u_int> cadidateIdList;
-		std::vector<u_int> nodeIdList;
-		nodeIdList.push_back(0);
-		while (nodeIdList.size() > 0) {
-			u_int curNodeId=nodeIdList.back();
-			KdTreeNode* pCurNode = pNodeList[curNodeId];
-
-			FloatSort<u_int> fSort;
-			u_int dimId = pCurNode->dim;
-			Vec curNodePos=pList[pCurNode->dataId];
-			float nodeSplittingValue = curNodePos[dimId];
-			float curSampleValue = p[dimId];
-			float x[4] = { nodeSplittingValue, curSampleValue - radius, curSampleValue, curSampleValue + radius };
-			u_int idList[4] = { 0,1,2,3 };
-			fSort.Sort(x, idList, 4);
-
-			nodeIdList.pop_back();
-			if (fSort[0].data == 0) {
-				if(pCurNode->childrenId[1]!=0)
-					nodeIdList.push_back(pCurNode->childrenId[1]);
-			}
-			else if (fSort[3].data == 0) {
-				if (pCurNode->childrenId[0] != 0)
-					nodeIdList.push_back(pCurNode->childrenId[0]);
-			}
-			else {
-				if (pCurNode->childrenId[0] != 0)
-					nodeIdList.push_back(pCurNode->childrenId[0]);
-				
-				if (pCurNode->childrenId[1] != 0)
-					nodeIdList.push_back(pCurNode->childrenId[1]);
-
-				cadidateIdList.push_back(pCurNode->dataId);
->>>>>>> 1ad6131e6877d64f61c717839a46d35027de7a43
 			}
 		}
 		
@@ -266,7 +204,6 @@ public:
 	}
 };
 
-<<<<<<< HEAD
 template<typename VEC>
 const int SearchNearestPoint(KdTree<VEC> p_tree, const VEC & p, const float radius, const std::vector<VEC> pList)
 {
@@ -281,8 +218,6 @@ const int SearchNearestPoint(KdTree<VEC> p_tree, const VEC & p, const float radi
 	return *iter;
 }
 
-=======
->>>>>>> 1ad6131e6877d64f61c717839a46d35027de7a43
 END_SSE_MATH_NAME
 
 #endif
