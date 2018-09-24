@@ -14,6 +14,11 @@ public:
 	FVec4(const float f) { v4=_mm_set1_ps(f); };
 	FVec4(const float x, const float y, const float z, const float w) { v4.m128_f32[0] = x; v4.m128_f32[1] = y; v4.m128_f32[2] = z; v4.m128_f32[3] = w; }
 	FVec4& operator =(const FVec4 &_A) { v4 = _A.v4; return *this; }
+<<<<<<< HEAD
+
+	void SetZero() { v4 = _mm_setzero_ps(); };
+=======
+>>>>>>> 1ad6131e6877d64f61c717839a46d35027de7a43
 
 	/* Arithmetic Operators */
 	friend FVec4 operator +(const FVec4 &_A, const FVec4 &_B) { return _A.v4 + _B.v4; }
