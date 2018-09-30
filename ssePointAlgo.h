@@ -1,54 +1,18 @@
 #pragma once
 
 #include <random>
+#include <algorithm>
 #include <sseBase.h>
 #include <sseBox.h>
 
 BEGIN_SSE_MATH_NAME
 
 template<typename VEC>
-void KMeanCluster(std::vector<std::vector<uint>> & clusterIdList, const std::vector<VEC> & points, const uint k, const uint iterNum)
+void KMeanClusterByCentriods(std::vector<std::vector<uint>> & clusterIdList, const std::vector<VEC> & points, std::vector<VEC> & centriods, const uint iterNum)
 {
-	if (k >= points.size()) {
-		clusterIdList.resize(points.size());
-		for (uint i = 0; i < clusterIdList.size(); ++i) {
-			clusterIdList[i].push_back(i);
-		}
-		return;
-	}
-
-	std::vector<VEC> centriods;
-	VEC cp = points[0];
-	uint clusterPointNum = points.size() / k;
-	uint lastClusterPointNum = points.size() - clusterPointNum*(k-1);
-	std::vector<uint> idList;
-	for (uint i = 0; i < points.size(); ++i) {
-		idList.push_back(i);
-	}
-
-	std::vector<uint>::iterator beginIter = idList.begin();
-	for (uint i = 0; i < k; ++i) {
-		uint curClusterPointNum = (i < k - 1) ? clusterPointNum : lastClusterPointNum;
-
-		std::nth_element(beginIter, beginIter + curClusterPointNum, idList.end(), [&](const uint a,const uint b) {
-			return (cp - points[a]).Length2() < (cp - points[b]).Length2();
-		});
-		
-		cp.SetZero();
-		for (uint j = 0; j < curClusterPointNum; ++j) {
-			cp += points[idList[*(beginIter + j)]];
-		}
-		cp /= (float)curClusterPointNum;
-		centriods.push_back(cp);
-		if (i < k - 1) {
-			beginIter += curClusterPointNum;
-			cp = points[*beginIter];
-		}
-	}
-
-	float minDist,curDist2;
+	float minDist, curDist2;
 	uint clusterId, curI, pId;
-	
+
 	for (uint iterI = 0; iterI < iterNum; ++iterI) {
 		clusterIdList.clear();
 		clusterIdList.resize(centriods.size());
@@ -68,38 +32,109 @@ void KMeanCluster(std::vector<std::vector<uint>> & clusterIdList, const std::vec
 		}
 
 		//caculate centroids
-		centriods.clear();
+		auto cIter = centriods.begin();
 		for (auto & clusterIds : clusterIdList) {
 			if (clusterIds.empty()) {
 				continue;
 			}
 			else {
-				VEC cp;
+				cIter->SetZero();
 				for (auto pId : clusterIds) {
-					cp += points[pId];
+					*cIter += points[pId];
 				}
-				cp *= 1.0f / (float)clusterIds.size();
-				centriods.push_back(cp);
+				*cIter *= 1.0f / (float)clusterIds.size();
 			}
+			++cIter;
 		}
 	}
 
-	auto cpIter = centriods.begin();
 	for (auto iter = clusterIdList.begin(); iter != clusterIdList.end(); ) {
-		if (iter->empty()) {
+		if (iter->empty())
 			iter = clusterIdList.erase(iter);
-			cpIter = centriods.erase(cpIter);
-		}
 		else
 			++iter;
 	}
+}
 
-	cpIter = centriods.begin();
-	for (auto iter = clusterIdList.begin(); iter != clusterIdList.end(); ++iter, ++cpIter) {
-		std::nth_element(iter->begin(), iter->begin() + 1, iter->end(), [&](const uint a, const uint b) {
-			return (*cpIter - points[a]).Length2() < (*cpIter - points[b]).Length2();
-		});
+template<typename VEC>
+void KMeanCluster(std::vector<std::vector<uint>> & clusterIdList, const std::vector<VEC> & points, const uint k, 
+	std::vector<float> &weightList,const uint iterNum=3)
+{
+	if (k >= points.size()) {
+		clusterIdList.resize(points.size());
+		for (uint i = 0; i < clusterIdList.size(); ++i) {
+			clusterIdList[i].push_back(i);
+		}
+		return;
 	}
+
+	float totalW=0;
+	for (auto w : weightList) {
+		totalW += w;
+	}
+	
+	uint pointNum = (uint)points.size();
+	float fPointNum = (float)pointNum;
+	float fOnePointPiece = 1.0f / fPointNum;
+
+	totalW = 1.0f / totalW;
+	for (auto & w : weightList) {
+		w *= totalW;
+	}
+
+	std::vector<VEC> centriods;
+	VEC cp;
+	cp = points[0];
+	std::vector<int> clusterPointNums;
+	int curNum,accNum = 0;
+	float weightRemainder = 0, fCurNum;
+	for (uint i = 0; i < k; ++i) {
+		fCurNum = fPointNum*weightList[i] + weightRemainder;
+		weightRemainder = fCurNum - floorf(fCurNum);
+		curNum = clamp<int>((int)(fCurNum), 0, pointNum - k);
+		if (curNum == 0)
+			continue;
+
+		clusterPointNums.push_back(curNum);
+		accNum += curNum;
+	}
+	accNum = std::max<int>(0,pointNum - accNum);
+	clusterPointNums.back() += accNum;
+
+	std::vector<uint> idList;
+	for (uint i = 0; i < points.size(); ++i) {
+		idList.push_back(i);
+	}
+
+	clusterIdList.clear();
+	clusterIdList.resize(clusterPointNums.size());
+	std::vector<uint>::iterator beginIter = idList.begin();
+	uint ck=(uint)clusterPointNums.size();
+	for (uint i = 0; i < ck; ++i) {
+		uint curClusterPointNum = clusterPointNums[i];
+
+		std::nth_element(beginIter, beginIter + curClusterPointNum, idList.end(), [&](const uint a,const uint b) {
+			return (cp - points[a]).Length2() < (cp - points[b]).Length2();
+		});
+
+		for (uint j = 0; j < curClusterPointNum; ++j) {
+			clusterIdList[i].push_back(*(beginIter+j));
+		}
+		
+		//cp.SetZero();
+		//for (uint j = 0; j < curClusterPointNum; ++j) {
+		//	cp += points[idList[*(beginIter + j)]];
+		//}
+		//cp /= (float)curClusterPointNum;
+		//
+		//centriods.push_back(cp);
+		if (i < ck - 1) {
+			beginIter += curClusterPointNum;
+			cp = points[*beginIter];
+		}
+	}
+
+	//KMeanClusterByCentriods(clusterIdList, points, centriods, iterNum);
 }
 
 

@@ -11,6 +11,7 @@
 #include <sseVec.h>
 #include <sseBox.h>
 #include <sseMatrix.h>
+#include <sseGraphic.h>
 
 BEGIN_SSE_MATH_NAME
 
@@ -46,7 +47,7 @@ public:
 	{
 		KdTreeNodePointer pNode(new KdTreeNode(_dim, _dataId));
 		if (_parentId != UINT_MAX)
-			pNodeList[_parentId]->childrenId[_chidSide] = pNodeList.size();
+			pNodeList[_parentId]->childrenId[_chidSide] = (u_int)pNodeList.size();
 
 		pNodeList.push_back(pNode);
 	}
@@ -107,13 +108,13 @@ public:
 			
 			if (curIdListLen == 2) {
 				addANode(param.parentId,	 dimId, idList[param.beginId],   param.childSide);
-				addANode(pNodeList.size()-1, dimId, idList[param.beginId+1], 1);
+				addANode((u_int)pNodeList.size()-1, dimId, idList[param.beginId+1], 1);
 				paramStack.pop_back();
 				continue;
 			}
 			else if (curIdListLen == 3) {
 				addANode(param.parentId, dimId, idList[param.beginId+1], param.childSide);
-				u_int parId = pNodeList.size()-1;
+				u_int parId = (u_int)pNodeList.size()-1;
 				addANode(parId, dimId, idList[param.beginId], 0);
 				addANode(parId, dimId, idList[param.beginId+2], 1);
 				paramStack.pop_back();
@@ -127,7 +128,7 @@ public:
 
 			//add a node
 			u_int gMidId = curMidId + param.beginId;
-			u_int curNodeId = pNodeList.size();
+			u_int curNodeId = (u_int)pNodeList.size();
 			addANode(param.parentId, dimId, idList[gMidId], param.childSide);
 			Box lBox, rBox;
 			param.box.AxisSplit(lBox,rBox,pList[gMidId][dimId],dimId);
@@ -138,7 +139,7 @@ public:
 		}
 		//fclose(fileId);
 	}
-	void Search(std::vector<u_int> & foundIdList, Vec p, const float radius, const std::vector<Vec> & pList)
+	void Search(std::vector<u_int> & foundIdList,const Vec & p, const float radius, const std::vector<Vec> & pList)
 	{
 		foundIdList.clear();
 		Box boxWithRad=box;
@@ -170,11 +171,10 @@ public:
 				cadidateIdList.push_back(pCurNode->dataId);
 
 			Box & curBox = boxList.back();
-			FloatSort<u_int> fSort;
 			u_int dimId = pCurNode->dim;
 			
 			float nodeSplittingValue = curNodePos[dimId];
-			float curSampleValue = p[dimId];
+			float curSampleValue = p.cValue(dimId);
 			Box lBox, rBox;
 			curBox.AxisSplit(lBox, rBox, nodeSplittingValue, dimId);
 
@@ -202,20 +202,82 @@ public:
 				foundIdList.push_back(id);
 		}
 	}
+	u_int SearchNearestP(const Vec & p, const std::vector<Vec> & pList, const bool ignoreOverLapped=true)
+	{
+		u_int nearestId=MAX_UINT;
+		Sphere sph;
+		sph.p = p;
+		sph.r = MAX_FLOAT;
+
+		std::vector<u_int> nodeIdList;
+		nodeIdList.push_back(0);
+
+		std::vector<Box> boxList;
+		boxList.push_back(box);
+
+		while (nodeIdList.size() > 0) {
+			u_int curNodeId = nodeIdList.back();
+			KdTreeNodePointer pCurNode = pNodeList[curNodeId];
+			Vec curNodePos = pList[pCurNode->dataId];
+			float dist = (curNodePos - sph.p).Length();
+
+			//dist > 0 to ignore the overlapped point
+			if (sph.r > dist && (dist > 0 || !ignoreOverLapped)) {
+				sph.r = dist;
+				nearestId = pCurNode->dataId;
+			}
+
+			//terminate split when meet leaf node
+			if (pCurNode->childrenId[0] == 0 && pCurNode->childrenId[1] == 0) {
+				nodeIdList.pop_back();
+				boxList.pop_back();
+				continue;
+			}
+
+			Box & curBox = boxList.back();
+			u_int dimId = pCurNode->dim;
+
+			float nodeSplittingValue = curNodePos[dimId];
+			float curSampleValue = p.cValue(dimId);
+			Box lBox, rBox;
+			curBox.AxisSplit(lBox, rBox, nodeSplittingValue, dimId);
+
+			nodeIdList.pop_back();
+			boxList.pop_back();
+
+			if (pCurNode->childrenId[0] != 0) {
+				if (Sphere_X_Box(sph, lBox)) {
+					nodeIdList.push_back(pCurNode->childrenId[0]);
+					boxList.push_back(lBox);
+				}
+			}
+
+			if (pCurNode->childrenId[1] != 0) {
+				if (Sphere_X_Box(sph, rBox)) {
+					nodeIdList.push_back(pCurNode->childrenId[1]);
+					boxList.push_back(rBox);
+				}
+			}
+		}
+
+		return nearestId;
+	}
 };
 
 template<typename VEC>
-const int SearchNearestPoint(KdTree<VEC> p_tree, const VEC & p, const float radius, const std::vector<VEC> pList)
+const u_int SearchNearestPoint(const VEC & p, const std::vector<VEC> pList)
 {
-	std::vector<u_int> idList;
-	p_tree.Search(idList, p, radius, pList);
-	if (idList.empty())
-		return -1;
-
-	auto iter = std::min_element(idList.begin(), idList.end(), [&](const u_int a, const u_int b) {
-		return (p - pList[a]).Length2() < (p - pList[b]).Length2();
-	});
-	return *iter;
+	float maxDist = MAX_FLOAT,curDist;
+	u_int nId,i=0;
+	for (auto rp : pList) {
+		curDist = (p - rp).Length2();
+		if (curDist < maxDist) {
+			maxDist = curDist;
+			nId = i;
+		}
+		++i;
+	}
+	return nId;
 }
 
 END_SSE_MATH_NAME

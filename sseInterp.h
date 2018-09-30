@@ -7,7 +7,7 @@ float Lerp(const float a, const float b, const float ratio)
 {
 	__m128 x0,x1;
 	x0 = mmFill_F(a,b);
-	x1 = mmFill_F(ratio, 1-ratio);
+	x1 = mmFill_F(1-ratio, ratio);
 	x0 *= x1;
 	return sum2(x0);
 }

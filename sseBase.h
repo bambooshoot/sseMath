@@ -5,6 +5,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <xmmintrin.h> 
+#include <limits>
 
 namespace sseMath {}
 
@@ -19,7 +20,18 @@ BEGIN_SSE_MATH_NAME
 #define PI2		(3.1415926f*2.0f)
 #endif
 
-typedef unsigned int u_int;
+using u_int = unsigned int;
+
+#define MAX_FLOAT std::numeric_limits<float>::max()
+#define MAX_UINT  std::numeric_limits<u_int>::max()
+
+template<typename T>
+T clamp(const T & val, const T & lo, const T & hi)
+{
+	return std::min(std::max(val, lo), hi);
+}
+
+
 
 #define MEM_ALIGN16 __declspec(align(16))
 #define INLINE __forceinline

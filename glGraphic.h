@@ -74,7 +74,7 @@ void DrawSphere(Sphere & sph)
 {
 	glPushMatrix();
 	glTranslatef(sph.p.x(), sph.p.y(), sph.p.z());
-	glutWireSphere(sph.r,5,5);
+	glutWireSphere(sph.r,16,16);
 	glPopMatrix();
 }
 
@@ -208,8 +208,8 @@ void DrawTriangleNode(TriangleTreeNode* pNode,Box & box, Imath::Rand32 & rand)
 	}
 	else {
 		TriangleTreeLeaf * pLeaf = (TriangleTreeLeaf*)pNode;
-		for (auto iter = pLeaf->tris.begin(); iter != pLeaf->tris.end(); ++iter)
-			DrawTriangle(*iter);
+		for (auto iter = pLeaf->triAndBoxes.begin(); iter != pLeaf->triAndBoxes.end(); ++iter)
+			DrawTriangle(iter->tri);
 	}
 }
 void DrawTriangleTree(TriangleTree & tree)
@@ -236,7 +236,7 @@ void DrawKdTree3D(KdTree<FVec3> & tree,std::vector<FVec3> & pList)
 	
 	while (stackParamList.size() > 0) {
 		StackParam   param = stackParamList.back();
-		KdTreeNode * pNode = tree.pNodeList[param.id];
+		auto pNode = tree.pNodeList[param.id];
 
 		u_int dimId = pNode->dim;
 		Box lBox, rBox;

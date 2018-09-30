@@ -1,4 +1,5 @@
 #include <sseGraphic.h>
+#include <sseBox.h>
 
 BEGIN_SSE_MATH_NAME
 
@@ -41,7 +42,58 @@ bool Sphere_X_Plane(float & d, FVec3 & xP, Sphere & sph, Plane & plane)
 	xP = sph.p - nV;
 	return fabsf(d) <= sph.r;
 };
+bool Sphere_X_Box(const Sphere & sph, Box & aQuad)
+{
+	u_int xIndex = 0;
+	u_int yIndex = 1;
+	u_int zIndex = 2;
 
+	if (sph.p.cValue(zIndex) + sph.r < aQuad.min[zIndex] || sph.p.cValue(zIndex) - sph.r > aQuad.max[zIndex])
+		return false;
+
+	Circle2D circle;
+	if (sph.p.cValue(zIndex) < aQuad.min[zIndex]) {
+		float zD = aQuad.min[zIndex] - sph.p.cValue(zIndex);
+		circle.r = sqrtf(sph.r*sph.r - zD*zD);
+	}
+	else if (sph.p.cValue(zIndex) > aQuad.max[zIndex]){
+		float zD = sph.p.cValue(zIndex) - aQuad.max[zIndex];
+		circle.r = sqrtf(sph.r*sph.r - zD*zD);
+	}
+	else{
+		circle.r = sph.r;
+	}
+
+	circle.p.x() = sph.p.cValue(xIndex);
+	circle.p.y() = sph.p.cValue(yIndex);
+	
+	if (circle.p.x() + circle.r < aQuad.min[xIndex] || circle.p.x() - circle.r > aQuad.max[xIndex]
+		|| circle.p.y() + circle.r < aQuad.min[yIndex] || circle.p.y() - circle.r > aQuad.max[yIndex]) {
+		return false;
+	}
+
+	float xMin,xMax;
+	if (circle.p.y() < aQuad.min[yIndex]) {
+		float xD = aQuad.min[yIndex] - circle.p.y();
+		xD = sqrtf(circle.r*circle.r - xD*xD);
+		xMin = circle.p.x() - xD;
+		xMax = circle.p.x() + xD;
+	}
+	else if (circle.p.y() > aQuad.max[yIndex]) {
+		float xD = circle.p.y() - aQuad.max[yIndex];
+		xD = sqrtf(circle.r*circle.r - xD*xD);
+		xMin = circle.p.x() - xD;
+		xMax = circle.p.x() + xD;
+	}else {
+		xMin = circle.p.x() - circle.r;
+		xMax = circle.p.x() + circle.r;
+	}
+
+	if (aQuad.min[xIndex] > xMax || aQuad.max[xIndex] < xMin)
+		return false;
+
+	return true;
+}
 bool Sphere_X_Triangle(FVec3 & xP, Sphere & sph, Triangle & tri)
 {
 	Plane plane = MakePlaneWithTriangle(tri);

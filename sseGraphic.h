@@ -19,6 +19,7 @@ struct Plane
 	float d; //distance from orginal to plane
 	Plane() :d(1) { n.SetVector(1,1,1); };
 };
+struct Box;
 
 struct Sphere
 {
@@ -132,6 +133,7 @@ Plane MakePlaneWithTriangle(Triangle & tri);
 Matrix3DTo2D Mat322FromTriangle(const Triangle & tri);
 bool Sphere_X_Plane(float & d, FVec3 & xP, Sphere & sph, Plane & plane);
 bool Sphere_X_Triangle(FVec3 & xP, Sphere & sph, Triangle & tri);
+bool Sphere_X_Box(const Sphere & sph, Box & abox);
 void Cut3TrianglesByX(Triangle subTris[3], FVec3 xp[2], int sortedTriId[3], Triangle & tri);
 
 enum AAPlane_X_Triangle_Type
