@@ -76,65 +76,63 @@ void KMeanCluster(std::vector<std::vector<uint>> & clusterIdList, const std::vec
 	uint pointNum = (uint)points.size();
 	float fPointNum = (float)pointNum;
 	float fOnePointPiece = 1.0f / fPointNum;
-
+	std::vector<uint> clusterPointNums;
 	totalW = 1.0f / totalW;
+	float remainder = 0;
+	uint pointNum2 = 0;
 	for (auto & w : weightList) {
 		w *= totalW;
+		float fCurPointNum = w*pointNum + remainder;
+		float curPointNum = floorf(fCurPointNum);
+		remainder = fCurPointNum - curPointNum;
+		uint uCurPointNum = (uint)curPointNum;
+		pointNum2 += uCurPointNum;
+		if (pointNum2 <= pointNum)
+			clusterPointNums.push_back(uCurPointNum);
+		else
+			clusterPointNums.push_back(uCurPointNum - (pointNum2 - pointNum));
 	}
 
 	std::vector<VEC> centriods;
 	VEC cp;
 	cp = points[0];
-	std::vector<int> clusterPointNums;
-	int curNum,accNum = 0;
-	float weightRemainder = 0, fCurNum;
-	for (uint i = 0; i < k; ++i) {
-		fCurNum = fPointNum*weightList[i] + weightRemainder;
-		weightRemainder = fCurNum - floorf(fCurNum);
-		curNum = clamp<int>((int)(fCurNum), 0, pointNum - k);
-		if (curNum == 0)
-			continue;
-
-		clusterPointNums.push_back(curNum);
-		accNum += curNum;
-	}
-	accNum = std::max<int>(0,pointNum - accNum);
-	clusterPointNums.back() += accNum;
 
 	std::vector<uint> idList;
 	for (uint i = 0; i < points.size(); ++i) {
 		idList.push_back(i);
 	}
 
-	clusterIdList.clear();
-	clusterIdList.resize(clusterPointNums.size());
+	uint cpNum = (uint)clusterPointNums.size();
 	std::vector<uint>::iterator beginIter = idList.begin();
-	uint ck=(uint)clusterPointNums.size();
-	for (uint i = 0; i < ck; ++i) {
-		uint curClusterPointNum = clusterPointNums[i];
 
-		std::nth_element(beginIter, beginIter + curClusterPointNum, idList.end(), [&](const uint a,const uint b) {
-			return (cp - points[a]).Length2() < (cp - points[b]).Length2();
-		});
+	for (uint i = 0; i < cpNum; ++i) {
+		if (i < cpNum - 1) {
+			std::nth_element(beginIter, beginIter + clusterPointNums[i], idList.end(), [&](const uint id0, const uint id1) {
+				return (points[id0] - cp).Length() < (points[id1] - cp).Length();
+			});
+			
+			cp.SetZero();
+			for (auto idIter = beginIter; idIter != beginIter + clusterPointNums[i]; ++idIter) {
+				cp += points[*idIter];
+			}
+			cp /= (float)clusterPointNums[i];
+			centriods.push_back(cp);
 
-		for (uint j = 0; j < curClusterPointNum; ++j) {
-			clusterIdList[i].push_back(*(beginIter+j));
-		}
-		
-		//cp.SetZero();
-		//for (uint j = 0; j < curClusterPointNum; ++j) {
-		//	cp += points[idList[*(beginIter + j)]];
-		//}
-		//cp /= (float)curClusterPointNum;
-		//
-		//centriods.push_back(cp);
-		if (i < ck - 1) {
-			beginIter += curClusterPointNum;
+			beginIter += clusterPointNums[i];
 			cp = points[*beginIter];
+		}
+		else {
+			cp.SetZero();
+			for (auto idIter = beginIter; idIter != idList.end(); ++idIter) {
+				cp += points[*idIter];
+			}
+			cp /= (float)clusterPointNums[i];
+			centriods.push_back(cp);
 		}
 	}
 
-	//KMeanClusterByCentriods(clusterIdList, points, centriods, iterNum);
+	clusterIdList.clear();
+	KMeanClusterByCentriods(clusterIdList, points, centriods, iterNum);
 }
 
 

@@ -86,10 +86,10 @@ public:
 	Box calcBox(std::vector<Triangle>& tris);
 	TriangleTreeNode* makeANode(std::vector<Triangle>& tris, const int leafContain, const int levelDepth);
 
-	void searchBranch(TriangleTreeNode* pNode, std::set<Triangle*>& foundTris, Box & box);
+	void searchBranch(TriangleTreeNode* pNode, std::vector<Triangle*>& foundTris, Box & box);
 
 	void Build(std::vector<Triangle>& tris,const int leafContain=4,const int levelDepth=5);
-	void SearchByBox(std::set<Triangle*>& foundTris, Box & box);
+	void SearchByBox(std::vector<Triangle*>& foundTris, Box & box);
 
 };
 

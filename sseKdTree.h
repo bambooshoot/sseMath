@@ -55,6 +55,9 @@ public:
 	{
 		Clear();
 
+		if (pList.empty())
+			return;
+
 		std::vector<u_int> idList(pList.size());
 		u_int i = 0;
 		for (u_int & ii : idList)
@@ -204,6 +207,9 @@ public:
 	}
 	u_int SearchNearestP(const Vec & p, const std::vector<Vec> & pList, const bool ignoreOverLapped=true)
 	{
+		if (pList.empty())
+			return MAX_UINT;
+
 		u_int nearestId=MAX_UINT;
 		Sphere sph;
 		sph.p = p;
@@ -262,6 +268,101 @@ public:
 
 		return nearestId;
 	}
+	void SearchNearestNPs(std::vector<u_int> & nIdList, const Vec & p, const std::vector<Vec> & pList, u_int npNum, const bool ignoreOverLapped = true)
+	{
+		if (pList.empty())
+			return;
+
+		if (npNum >= pList.size()) {
+			nIdList.clear();
+			for (u_int i = 0; i < pList.size(); ++i)
+				nIdList.push_back(i);
+			return;
+		}
+
+		struct flAndId {
+			float d;
+			u_int id;
+		};
+
+		std::vector<flAndId> nDAndIdList;
+		
+		Sphere sph;
+		sph.p = p;
+		sph.r = MAX_FLOAT;
+
+		flAndId fId;
+
+		std::vector<u_int> nodeIdList;
+		nodeIdList.push_back(0);
+
+		std::vector<Box> boxList;
+		boxList.push_back(box);
+
+		while (nodeIdList.size() > 0) {
+			u_int curNodeId = nodeIdList.back();
+			KdTreeNodePointer pCurNode = pNodeList[curNodeId];
+			Vec curNodePos = pList[pCurNode->dataId];
+			float dist = (curNodePos - sph.p).Length();
+
+			//dist > 0 to ignore the overlapped point
+			if (sph.r > dist && (dist > 0 || !ignoreOverLapped)) {
+				fId.id = pCurNode->dataId;
+				fId.d = dist;
+				if (nDAndIdList.size() < npNum) {
+					nDAndIdList.push_back(fId);
+				}
+				else {
+					std::nth_element(nDAndIdList.begin(), nDAndIdList.begin() + 1, nDAndIdList.end(), [&](flAndId & a, flAndId & b) {
+						return a.d > b.d;
+					});
+					nDAndIdList[0] = fId;
+				}
+				std::nth_element(nDAndIdList.begin(), nDAndIdList.begin() + 1, nDAndIdList.end(), [&](flAndId & a, flAndId & b) {
+					return a.d > b.d;
+				});
+				sph.r = nDAndIdList[0].d;
+			}
+
+			//terminate split when meet leaf node
+			if (pCurNode->childrenId[0] == 0 && pCurNode->childrenId[1] == 0) {
+				nodeIdList.pop_back();
+				boxList.pop_back();
+				continue;
+			}
+
+			Box & curBox = boxList.back();
+			u_int dimId = pCurNode->dim;
+
+			float nodeSplittingValue = curNodePos[dimId];
+			float curSampleValue = p.cValue(dimId);
+			Box lBox, rBox;
+			curBox.AxisSplit(lBox, rBox, nodeSplittingValue, dimId);
+
+			nodeIdList.pop_back();
+			boxList.pop_back();
+
+			if (pCurNode->childrenId[0] != 0) {
+				if (Sphere_X_Box(sph, lBox)) {
+					nodeIdList.push_back(pCurNode->childrenId[0]);
+					boxList.push_back(lBox);
+				}
+			}
+
+			if (pCurNode->childrenId[1] != 0) {
+				if (Sphere_X_Box(sph, rBox)) {
+					nodeIdList.push_back(pCurNode->childrenId[1]);
+					boxList.push_back(rBox);
+				}
+			}
+		}
+
+		nIdList.clear();
+		for (auto & fid : nDAndIdList) {
+			nIdList.push_back(fid.id);
+		}
+		
+	}
 };
 
 template<typename VEC>
@@ -278,6 +379,64 @@ const u_int SearchNearestPoint(const VEC & p, const std::vector<VEC> pList)
 		++i;
 	}
 	return nId;
+}
+
+template<typename VEC>
+void SearchNearestNPs(std::vector<u_int> & nIdList, u_int npNum, const VEC & p, const std::vector<VEC> pList)
+{
+	struct DistAndId {
+		float d;
+		u_int id;
+	};
+	DistAndId distAndId;
+
+	std::vector<DistAndId> nDAndIdList;
+
+	float dist,maxDist = MAX_FLOAT;
+
+	npNum = std::min((u_int)pList.size(), npNum);
+
+	u_int i = 0;
+	for (auto rp : pList) {
+		dist = (p - rp).Length2();
+		if (dist < maxDist) {
+			distAndId.id = i;
+			distAndId.d = dist;
+			if (nDAndIdList.size() < npNum) {
+				nDAndIdList.push_back(distAndId);
+			}
+			else {
+				std::nth_element(nDAndIdList.begin(), nDAndIdList.begin() + 1, nDAndIdList.end(), [&](DistAndId & a, DistAndId & b) {
+					return a.d > b.d;
+				});
+				nDAndIdList[0] = distAndId;
+			}
+			std::nth_element(nDAndIdList.begin(), nDAndIdList.begin() + 1, nDAndIdList.end(), [&](DistAndId & a, DistAndId & b) {
+				return a.d > b.d;
+			});
+			maxDist = nDAndIdList[0].d;
+		}
+		
+		++i;
+	}
+
+	//u_int i = 0;
+	//for (auto rp : pList) {
+	//	distAndId.d = (p - rp).Length2();
+	//	distAndId.id = i;
+	//	dAndIdList.push_back(distAndId);
+	//	++i;
+	//}
+
+	
+
+	//std::nth_element(dAndIdList.begin(), dAndIdList.begin() + npNum, dAndIdList.end(), [&](const DistAndId & a, const DistAndId & b) {
+	//	return a.d < b.d;
+	//});
+	
+	nIdList.clear();
+	for (u_int i = 0; i < npNum; ++i) 
+		nIdList.push_back(nDAndIdList[i].id);
 }
 
 END_SSE_MATH_NAME

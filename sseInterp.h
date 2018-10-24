@@ -26,7 +26,7 @@ void Lerp(float & out0, float & out1, const float a0, const float a1, const floa
 template<typename VEC>
 VEC Lerp(const VEC & a, const VEC & b, const float ratio)
 {
-	return a*(1 - ratio) + a*ratio;
+	return a*(1 - ratio) + b*ratio;
 }
 
 template<typename VEC>

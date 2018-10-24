@@ -99,7 +99,7 @@ void TriangleTree::Build(std::vector<Triangle>& tris, const int leafContain, con
 	if (pRootNode->type == TriangleTreeNode::kBranch)
 		buildBranch((TriangleTreeBranch*)pRootNode, tris, leafContain, levelDepth - 1);
 }
-void TriangleTree::SearchByBox(std::set<Triangle*>& foundTris, Box & box)
+void TriangleTree::SearchByBox(std::vector<Triangle*>& foundTris, Box & box)
 {
 	if (!rootBox.In(box))
 		return;
@@ -109,13 +109,13 @@ void TriangleTree::SearchByBox(std::set<Triangle*>& foundTris, Box & box)
 	searchBranch(pNode, foundTris, box);
 }
 
-void TriangleTree::searchBranch(TriangleTreeNode* pNode, std::set<Triangle*>& foundTris, Box & box)
+void TriangleTree::searchBranch(TriangleTreeNode* pNode, std::vector<Triangle*>& foundTris, Box & box)
 {
 	if (pNode->type == TriangleTreeNode::kLeaf) {
 		TriangleTreeLeaf * pLeaf = (TriangleTreeLeaf*)pNode;
 		for (auto & triAndBox : pLeaf->triAndBoxes)
 			if(triAndBox.box.In(box))
-				foundTris.insert(&triAndBox.tri);
+				foundTris.push_back(&triAndBox.tri);
 		return;
 	}
 

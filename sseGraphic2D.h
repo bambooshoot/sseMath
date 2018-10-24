@@ -23,6 +23,10 @@ struct Circle2D
 	FVec2 p;
 	float r;
 	Circle2D() :r(1) {};
+	bool In(const FVec2 & bp) const
+	{
+		return (bp - p).Length2() <= r*r;
+	}
 };
 
 struct Edge2D

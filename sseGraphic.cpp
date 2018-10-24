@@ -37,7 +37,7 @@ Matrix3DTo2D Mat322FromTriangle(const Triangle & tri)
 
 bool Sphere_X_Plane(float & d, FVec3 & xP, Sphere & sph, Plane & plane)
 {
-	d = sph.p.Dot(plane.n);
+	d = (sph.p - plane.n*plane.d).Dot(plane.n);
 	FVec3 nV = plane.n*d;
 	xP = sph.p - nV;
 	return fabsf(d) <= sph.r;
@@ -101,16 +101,29 @@ bool Sphere_X_Triangle(FVec3 & xP, Sphere & sph, Triangle & tri)
 	if (!Sphere_X_Plane(d, xP, sph, plane))
 		return false;
 
+	FVec3 xAxis, yAxis;
+	xAxis = tri.p[1] - tri.p[0];
+	float p01Len = xAxis.Length();
+	xAxis.Normalize();
+
+	yAxis = plane.n.Cross(xAxis);
+	yAxis.Normalize();
+
+	FVec3 locP = sph.p - tri.p[0];
+
 	Circle2D circle;
 	circle.r = sqrtf(sph.r*sph.r - d*d);
-	Matrix3DTo2D mat322 = Mat322FromTriangle(tri);
-	circle.p = mat322*xP;
+	circle.p.SetVector(locP.Dot(xAxis), locP.Dot(yAxis));
 
-	Triangle2D tri2D = ProjTriangleFrom3D22D(mat322, tri);
+	locP = tri.p[2] - tri.p[0];
+
+	Triangle2D tri2D;
+	tri2D.p[0].SetZero();
+	tri2D.p[1].SetVector(p01Len, 0);
+	tri2D.p[2].SetVector(locP.Dot(xAxis), locP.Dot(yAxis));
 
 	// problem projected to 2D space becomes intersect between circle2d and triangle2d
-	Circle2D_X_Triangle2D(circle, tri2D);
-	return true;
+	return Circle2D_X_Triangle2D(circle, tri2D);
 };
 void Cut3TrianglesByX(Triangle subTris[3], FVec3 xp[2], int sortedTriId[3], Triangle & tri)
 {
