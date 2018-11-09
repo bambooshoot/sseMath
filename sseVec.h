@@ -31,6 +31,7 @@ public:
 	FVec4& operator *=(const float  _A) { v4 = v4 * _A;    return *this; }
 	FVec4& operator /=(const FVec4 &_A) { v4 = v4 / _A.v4; return *this; }
 	FVec4& operator /=(const float  _A) { v4 = v4 / _A;    return *this; }
+	FVec4 operator -() { v4*-1; return *this; }
 	float& operator[](const int id) { return v4.m128_f32[id]; }
 
 	float& x() { return v4.m128_f32[0]; }
@@ -121,6 +122,14 @@ public:
 		x = v4.m128_f32[0];
 		y = v4.m128_f32[1];
 		z = v4.m128_f32[2];
+	}
+	void EnsureVector()
+	{
+		w() = 0;
+	}
+	void EnsurePoint()
+	{
+		w() = 1;
 	}
 
 	/* Arithmetic Operators */

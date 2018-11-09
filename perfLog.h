@@ -37,16 +37,32 @@ public:
 		logMap[key].accTime += endTime - logMap[key].lastMoment;
 		logMap[key].lastMoment = endTime;
 	}
+	void PrintStr(const std::string & key,const std::string & str)
+	{
+		txtMap[key] = str;
+	}
+	void PrintFlt(const std::string & key, const float value)
+	{
+		fltMap[key] = value;
+	}
 	void Write()
 	{
 		for (auto tm : logMap) {
 			fprintf(fileId, "%s time: %f sec(s) \n", tm.first.c_str(), tm.second.accTime);
 		}
+		for (auto str : txtMap) {
+			fprintf(fileId, "%s %s\n", str.first.c_str(), str.second.c_str());
+		}
+		for (auto value : fltMap) {
+			fprintf(fileId, "%s %f\n", value.first.c_str(), value.second);
+		}
 		fflush(fileId);
-	}
+	} 
 public:
 	FILE * fileId;
 	std::map<std::string, TimeMark> logMap;
+	std::map<std::string, std::string> txtMap;
+	std::map<std::string, float> fltMap;
 
 	static PerfLog perfLog;
 };

@@ -23,6 +23,7 @@ BEGIN_SSE_MATH_NAME
 using u_int = unsigned int;
 
 #define MAX_FLOAT std::numeric_limits<float>::max()
+#define MIN_FLOAT std::numeric_limits<float>::min()
 #define MAX_UINT  std::numeric_limits<u_int>::max()
 
 template<typename T>

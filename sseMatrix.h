@@ -3,6 +3,7 @@
 #include <sseBase.h>
 #include <sseVec.h>
 
+
 BEGIN_SSE_MATH_NAME
 
 class Matrix44
@@ -53,9 +54,23 @@ public:
 		matA.f[3] = (*this) * _B.f[3];
 		return matA;
 	}
+	Matrix44 operator *= (const Matrix44 & _B)
+	{
+		Matrix44 matA;
+		matA.f[0] = (*this) * _B.f[0];
+		matA.f[1] = (*this) * _B.f[1];
+		matA.f[2] = (*this) * _B.f[2];
+		matA.f[3] = (*this) * _B.f[3];
+		*this = matA;
+		return matA;
+	}
 	void Transpose()
 	{
 		_MM_TRANSPOSE4_PS(f[0], f[1], f[2], f[3]);
+	}
+	float & operator()(const u_int colI, const u_int rowI)
+	{
+		return f[colI].m128_f32[rowI];
 	}
 	//void Inverse()
 	//{
@@ -180,7 +195,10 @@ public:
 			x10, x11, x12, x13,
 			x20, x21, x22, x23,
 			x30, x31, x32, x33) {}
-
+	TransformMatrix3D(const Matrix44 & mat44) 
+	{
+		*(Matrix44*)this = mat44;
+	};
 	TransformMatrix3D & operator = (const Matrix33 & mat33)
 	{
 		f[0] = mat33.f[0];
@@ -193,14 +211,74 @@ public:
 	{
 		return FVec3(*((Matrix44*)this) * _A.v4);
 	}
-	void Inverse()
+	TransformMatrix3D operator * (const TransformMatrix3D & _A) const
 	{
-		Matrix33 mat33(*this);
-		mat33.Inverse();
-		FVec3 x(-f[3].m128_f32[0], -f[3].m128_f32[1], -f[3].m128_f32[2], 0);
-		x = mat33*x;
-		*this = mat33;
-		f[3] = _mm_set_ps(1, x.z(), x.y(), x.x());
+		return TransformMatrix3D((Matrix44)*this * (Matrix44)_A);
+	}
+	TransformMatrix3D operator *= (const TransformMatrix3D & _A)
+	{
+		*this = (Matrix44)*this * (Matrix44)_A;
+		return *this;
+	}
+	TransformMatrix3D Inverse()
+	{
+		Matrix44 s((*this)(1, 1) * (*this)(2, 2) - (*this)(2, 1) * (*this)(1, 2),
+			(*this)(2, 1) * (*this)(0, 2) - (*this)(0, 1) * (*this)(2, 2),
+			(*this)(0, 1) * (*this)(1, 2) - (*this)(1, 1) * (*this)(0, 2),
+			0,
+
+			(*this)(2, 0) * (*this)(1, 2) - (*this)(1, 0) * (*this)(2, 2),
+			(*this)(0, 0) * (*this)(2, 2) - (*this)(2, 0) * (*this)(0, 2),
+			(*this)(1, 0) * (*this)(0, 2) - (*this)(0, 0) * (*this)(1, 2),
+			0,
+
+			(*this)(1, 0) * (*this)(2, 1) - (*this)(2, 0) * (*this)(1, 1),
+			(*this)(2, 0) * (*this)(0, 1) - (*this)(0, 0) * (*this)(2, 1),
+			(*this)(0, 0) * (*this)(1, 1) - (*this)(1, 0) * (*this)(0, 1),
+			0,
+
+			0,
+			0,
+			0,
+			1);
+
+		float r = (*this)(0, 0) * s(0, 0) + (*this)(0, 1) * s(1, 0) + (*this)(0, 2) * s(2, 0);
+
+		if (abs(r) >= 1)
+		{
+			for (int i = 0; i < 3; ++i)
+			{
+				for (int j = 0; j < 3; ++j)
+				{
+					s(i, j) /= r;
+				}
+			}
+		}
+		else
+		{
+			float mr = abs(r) / MIN_FLOAT;
+
+			for (int i = 0; i < 3; ++i)
+			{
+				for (int j = 0; j < 3; ++j)
+				{
+					if (mr > abs(s(i, j)))
+					{
+						s(i, j) /= r;
+					}
+					else
+					{
+						return Matrix44();
+					}
+				}
+			}
+		}
+
+		s(3, 0) = -(*this)(3, 0) * s(0, 0) - (*this)(3, 1) * s(1, 0) - (*this)(3, 2) * s(2, 0);
+		s(3, 1) = -(*this)(3, 0) * s(0, 1) - (*this)(3, 1) * s(1, 1) - (*this)(3, 2) * s(2, 1);
+		s(3, 2) = -(*this)(3, 0) * s(0, 2) - (*this)(3, 1) * s(1, 2) - (*this)(3, 2) * s(2, 2);
+
+		return s;
 	}
 	FVec3 Scale()
 	{
@@ -219,9 +297,17 @@ public:
 	{
 		return FVec3(f[3].m128_f32[0], f[3].m128_f32[1], f[3].m128_f32[2], 0);
 	}
+	FVec3 Axis(const int i)
+	{
+		return FVec3(f[i].m128_f32[0], f[i].m128_f32[1], f[i].m128_f32[2], 0);
+	}
 	void SetAxis(const FVec3 & ax,const int i)
 	{
 		f[i] = ax.v4;
+	}
+	void SetAxis(const float x, const float y, const float z, const float w, const int i)
+	{
+		f[i] = _mm_set_ps(w, z, y, x);
 	}
 	void SetTranslate(const FVec3 & t)
 	{
