@@ -142,7 +142,7 @@ public:
 		}
 		//fclose(fileId);
 	}
-	void Search(std::vector<u_int> & foundIdList,const Vec & p, const float radius, const std::vector<Vec> & pList)
+	void Search(std::vector<u_int> & foundIdList,const Vec & p, const float radius, const std::vector<Vec> & pList) const
 	{
 		foundIdList.clear();
 		Box boxWithRad=box;
@@ -205,7 +205,7 @@ public:
 				foundIdList.push_back(id);
 		}
 	}
-	u_int SearchNearestP(const Vec & p, const std::vector<Vec> & pList, const bool ignoreOverLapped=true)
+	u_int SearchNearestP(const Vec & p, const std::vector<Vec> & pList, const bool ignoreOverLapped=true) const
 	{
 		if (pList.empty())
 			return MAX_UINT;
@@ -268,7 +268,7 @@ public:
 
 		return nearestId;
 	}
-	void SearchNearestNPs(std::vector<u_int> & nIdList, const Vec & p, const std::vector<Vec> & pList, u_int npNum, const bool ignoreOverLapped = true)
+	void SearchNearestNPs(std::vector<u_int> & nIdList, const Vec & p, const std::vector<Vec> & pList, u_int npNum, const bool ignoreOverLapped = true) const
 	{
 		if (pList.empty())
 			return;

@@ -61,6 +61,7 @@ void KMeanCluster(std::vector<std::vector<uint>> & clusterIdList, const std::vec
 	std::vector<float> &weightList,const uint iterNum=3)
 {
 	if (k >= points.size()) {
+		clusterIdList.clear();
 		clusterIdList.resize(points.size());
 		for (uint i = 0; i < clusterIdList.size(); ++i) {
 			clusterIdList[i].push_back(i);
@@ -90,8 +91,11 @@ void KMeanCluster(std::vector<std::vector<uint>> & clusterIdList, const std::vec
 		if (pointNum2 <= pointNum)
 			clusterPointNums.push_back(uCurPointNum);
 		else
-			clusterPointNums.push_back(uCurPointNum - (pointNum2 - pointNum));
+			clusterPointNums.push_back( pointNum - (pointNum2 - uCurPointNum) );
 	}
+
+	if (pointNum2 < pointNum)
+		clusterPointNums.back() += 1;
 
 	std::vector<VEC> centriods;
 	VEC cp;
@@ -106,6 +110,9 @@ void KMeanCluster(std::vector<std::vector<uint>> & clusterIdList, const std::vec
 	std::vector<uint>::iterator beginIter = idList.begin();
 
 	for (uint i = 0; i < cpNum; ++i) {
+		if (clusterPointNums[i] == 0)
+			continue;
+
 		if (i < cpNum - 1) {
 			std::nth_element(beginIter, beginIter + clusterPointNums[i], idList.end(), [&](const uint id0, const uint id1) {
 				return (points[id0] - cp).Length() < (points[id1] - cp).Length();
@@ -119,6 +126,9 @@ void KMeanCluster(std::vector<std::vector<uint>> & clusterIdList, const std::vec
 			centriods.push_back(cp);
 
 			beginIter += clusterPointNums[i];
+			if (beginIter >= idList.end())
+				break;
+			
 			cp = points[*beginIter];
 		}
 		else {

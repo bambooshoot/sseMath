@@ -28,6 +28,13 @@ public:
 		f[2] = _mm_set_ps(x23, x22, x21, x20);
 		f[3] = _mm_set_ps(x33, x32, x31, x30);
 	}
+	Matrix44(const Matrix44 & matB)
+	{
+		f[0] = matB.f[0];
+		f[1] = matB.f[1];
+		f[2] = matB.f[2];
+		f[3] = matB.f[3];
+	}
 
 	__m128 operator * (const __m128 &_B)
 	{
@@ -198,13 +205,22 @@ public:
 	TransformMatrix3D(const Matrix44 & mat44) 
 	{
 		*(Matrix44*)this = mat44;
-	};
+	}
+	TransformMatrix3D(const TransformMatrix3D & transMat)
+	{
+		*(Matrix44*)this = (Matrix44)transMat;
+	}
 	TransformMatrix3D & operator = (const Matrix33 & mat33)
 	{
 		f[0] = mat33.f[0];
 		f[1] = mat33.f[1];
 		f[2] = mat33.f[2];
 		f[3] = _mm_set_ps(1, 0, 0, 0);
+		return *this;
+	}
+	TransformMatrix3D & operator = (const Matrix44 & mat44)
+	{
+		*(Matrix44*)this = mat44;
 		return *this;
 	}
 	FVec3 operator * (const FVec3 & _A) const
@@ -217,7 +233,7 @@ public:
 	}
 	TransformMatrix3D operator *= (const TransformMatrix3D & _A)
 	{
-		*this = (Matrix44)*this * (Matrix44)_A;
+		*(Matrix44*)this = (Matrix44)*this * (Matrix44)_A;
 		return *this;
 	}
 	TransformMatrix3D Inverse()
@@ -336,6 +352,18 @@ public:
 							0 );
 
 		f[3] = _mm_set_ps(0, 0, 0, 1);
+	}
+	void NormalizeAxis()
+	{
+		__m128 x, xx = _mm_setzero_ps();
+		for (int i = 0; i < 3; ++i) {
+			x = _mm_set_ps(0, f[2].m128_f32[i], f[1].m128_f32[i], f[0].m128_f32[i]);
+			xx += x * x;
+		}
+		xx = _mm_rsqrt_ps(xx);
+		for (int i = 0; i < 3; ++i) {
+			f[i] *= xx.m128_f32[i];
+		}
 	}
 };
 

@@ -90,7 +90,6 @@ public:
 
 	void Build(std::vector<Triangle>& tris,const int leafContain=4,const int levelDepth=5);
 	void SearchByBox(std::vector<Triangle*>& foundTris, Box & box);
-
 };
 
 

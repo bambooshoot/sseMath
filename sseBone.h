@@ -52,8 +52,9 @@ public:
 class BoneChain
 {
 private:
-	std::vector<Bone> bones;
-	std::vector<FVec3> joints;
+	std::vector<Bone> bones;// the 1st bone's matrix comes from move and rotate the line segement from joint0 to joint1 from orgiral point of world and zAxis orientation to where it is and where it aims at.
+							// the rest bone's matrix comes from parent space to where it is and where it aims at.
+	std::vector<FVec3> joints;// the first joint is in world space, the rest joints after 1st are in local space
 
 	void AddJointPoint(const FVec3 & _pos)
 	{
@@ -83,7 +84,7 @@ private:
 			TransformMatrix3D rotMat = quat.toMatrix44();
 
 			TransformMatrix3D  offsetMat;
-			offsetMat.SetAxis( pos0, 3 );
+			offsetMat.SetTranslate( pos0 );
 
 			rotMat = offsetMat * rotMat;
 
@@ -99,7 +100,27 @@ private:
 		
 	}
 
+	void AddEndJoint(const int endExtendNum)
+	{
+		TransformMatrix3D identifiedMat;
+		Bone bone;
+		sseMath::FVec3 endP = joints.back();
+		identifiedMat.SetAxis(endP, 3);
+
+		for (int i = 0; i < endExtendNum; ++i) {
+			bone.SetMatrix(identifiedMat);
+			bones.push_back(bone);
+			joints.push_back(endP);
+		}
+	}
+
 public:
+	BoneChain() = default;
+	BoneChain(const BoneChain & b)
+	{
+		bones = b.bones;
+		joints = b.joints;
+	}
 	void Clear()
 	{
 		bones.clear();
@@ -116,7 +137,9 @@ public:
 	Box BBox() const
 	{
 		Box box;
-		for (const FVec3 & p : joints) {
+		std::vector<FVec3> pList;
+		GetWorldJointList(pList);
+		for (const FVec3 & p : pList) {
 			box.Extend(p);
 		}
 		return box;
@@ -157,12 +180,13 @@ public:
 		}
 		return mat44;
 	}
-	void Build(const std::vector<FVec3> & tarJoints)
+	void Build(const std::vector<FVec3> & tarJoints, const int endExtendNum)
 	{
 		Clear();
 		for (const FVec3 & p : tarJoints) {
 			AddJointPoint(p);
 		}
+		AddEndJoint(endExtendNum);
 	}
 	void TransformToEveryBone(std::vector<FVec3> & vList, const FVec3 & v)
 	{
@@ -184,10 +208,12 @@ public:
 		FVec3 p0 = *src_joint0Iter;
 		*src_joint0Iter = *tar_joint0Iter;
 
+		u_int avaiableJointNum = (u_int)tarJoints.size() - 1;
+
 		FVec3 tarP0_local, tarP1_local, zAxis0(0, 0, 1), offsetV;
 
 		TransformMatrix3D worldMatrix, invWorldMatrix, offsetMat, rotMat, localMat;
-		for (u_int bId = 0; bId < bones.size(); ++bId) {
+		for (u_int bId = 0; bId < avaiableJointNum; ++bId) {
 			auto & bone = bones[bId];
 			bone.AccumMatrix(worldMatrix);
 
@@ -202,8 +228,9 @@ public:
 			Quaternion quat;
 			quat = quat.setRotation(zAxis0, zAxis);
 			rotMat = quat.toMatrix44();
+			//rotMat.NormalizeAxis();
 
-			offsetMat.SetAxis(tarP0_local,3);
+			offsetMat.SetTranslate(tarP0_local);
 
 			localMat = offsetMat * rotMat;
 
@@ -231,6 +258,13 @@ public:
 			len += (pList[i+1] - pList[i]).Length();
 		}
 		return len;
+	}
+	float LocalZWeight(const u_int id, const FVec3 & localP)
+	{
+		if (joints[id + 1].z() == 0)
+			return 0;
+
+		return localP.cValue(2) / joints[id + 1].z();
 	}
 	FVec3 LocalSpace(const u_int id, const FVec3 & sampleP)
 	{

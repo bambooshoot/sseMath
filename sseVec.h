@@ -13,7 +13,7 @@ public:
 	FVec4(const __m128 _A) { v4 = _A; };
 	FVec4(const float f) { v4=_mm_set1_ps(f); };
 	FVec4(const float x, const float y, const float z, const float w) { v4.m128_f32[0] = x; v4.m128_f32[1] = y; v4.m128_f32[2] = z; v4.m128_f32[3] = w; }
-	FVec4& operator =(const FVec4 &_A) { v4 = _A.v4; return *this; }
+	FVec4 & operator =(const FVec4 &_A) { v4 = _A.v4; return *this; }
 
 	void SetZero() { v4 = _mm_setzero_ps(); };
 
@@ -79,7 +79,7 @@ public:
 	FVec3(const float x, const float y, const float z, const float w = 0) { v4.m128_f32[0] = x; v4.m128_f32[1] = y; v4.m128_f32[2] = z; v4.m128_f32[3] = w; }
 	FVec3(const float a) { v4.m128_f32[0] = a; v4.m128_f32[1] = a; v4.m128_f32[2] = a; v4.m128_f32[3] = 0; }
 
-	FVec3& operator =(const FVec3 &_A) { v4 = _A.v4; return *this; }
+	FVec3 & operator =(const FVec3 &_A) { v4 = _A.v4; return *this; }
 	float & operator[](const int id) { return v4.m128_f32[id]; }
 
 	u_int Dim() const { return 3; };
@@ -136,9 +136,36 @@ public:
 	friend FVec3 operator +(const FVec3 &_A, const FVec3 &_B) { return _A.v4 + _B.v4; }
 	friend FVec3 operator -(const FVec3 &_A, const FVec3 &_B) { return _A.v4 - _B.v4; }
 	friend FVec3 operator *(const FVec3 &_A, const FVec3 &_B) { return _A.v4 * _B.v4; }
-	friend FVec3 operator *(const FVec3 &_A, const float  _B) { return _A.v4 * _B; }
 	friend FVec3 operator /(const FVec3 &_A, const FVec3 &_B) { return _A.v4 / _B.v4; }
-	friend FVec3 operator /(const FVec3 &_A, const float _B) { return _A.v4 / _B; }
+	friend FVec3 operator *(const FVec3 &_A, const float  _B) 
+	{ 
+		FVec3 c = _A;
+		float w = c.w();
+		c.v4 *= _B;
+		c.w() = w; 
+		return c; 
+	}
+	friend FVec3 operator /(const FVec3 &_A, const float _B) 
+	{ 
+		FVec3 c = _A;
+		float w = c.w();
+		c.v4 /= _B;
+		c.w() = w;
+		return c;
+	}
+
+	FVec3 operator *=(const float _B)
+	{
+		FVec3 c = (*this) * _B;
+		*this = c;
+		return *this;
+	}
+	FVec3 operator /=(const float _B)
+	{
+		FVec3 c = (*this) / _B;
+		*this = c;
+		return *this;
+	}
 };
 
 INLINE float distance(FVec3 & a, FVec3 &b){ return (a - b).Length(); }
@@ -203,6 +230,43 @@ public:
 	{
 		x = v4.m128_f32[0];
 		y = v4.m128_f32[1];
+	}
+
+	/* Arithmetic Operators */
+	friend FVec2 operator +(const FVec2 &_A, const FVec2 &_B) { return _A.v4 + _B.v4; }
+	friend FVec2 operator -(const FVec2 &_A, const FVec2 &_B) { return _A.v4 - _B.v4; }
+	friend FVec2 operator *(const FVec2 &_A, const FVec2 &_B) { return _A.v4 * _B.v4; }
+	friend FVec2 operator /(const FVec2 &_A, const FVec2 &_B) { return _A.v4 / _B.v4; }
+	friend FVec2 operator *(const FVec2 &_A, const float  _B)
+	{
+		FVec2 c = _A;
+		float w = c.z();
+		c.v4 *= _B;
+		c.z() = w;
+		c.w() = 0;
+		return c;
+	}
+	friend FVec2 operator /(const FVec2 &_A, const float _B) 
+	{
+		FVec2 c = _A;
+		float w = c.z();
+		c.v4 /= _B; 
+		c.z() = w; 
+		c.w() = 0; 
+		return c; 
+	}
+
+	FVec2 operator *=(const float _B)
+	{
+		FVec2 c = (*this) * _B;
+		*this = c;
+		return *this;
+	}
+	FVec2 operator /=(const float _B)
+	{
+		FVec2 c = (*this) * _B;
+		*this = c;
+		return *this;
 	}
 };
 

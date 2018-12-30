@@ -53,8 +53,9 @@ public:
 	}
 	Quaternion operator *= (const Quaternion &b)
 	{
+		float wtmp = w * b.w - v.Dot(b.v);
 		v = v.Cross(b.v) + v*b.w + b.v*w;
-		w = w*b.w - v.Dot(b.v);
+		w = wtmp;
 		return *this;
 	}
 	Quaternion operator / (const float f) const
